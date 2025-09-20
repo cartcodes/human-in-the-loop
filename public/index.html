@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Approval System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
+            background: #0a0a0a;
+            min-height: 100vh;
+            color: #e0e0e0;
+            padding: 0;
+        }
+
+        .nav-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50px;
+            background: #1a1a1a;
+            border-bottom: 1px solid #2a2a2a;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            z-index: 1000;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-link {
+            color: #8a8a8a;
+            text-decoration: none;
+            font-size: 0.9rem;
+            padding: 5px 10px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .nav-link:hover {
+            color: #b0b0b0;
+            background: #2a2a2a;
+        }
+
+        .nav-link.active {
+            color: #e0e0e0;
+            background: #2a2a2a;
+        }
+
+        .content-area {
+            margin-top: 50px;
+            display: flex;
+            justify-content: flex-start;
+            padding: 20px;
+        }
+
+        .messages-container {
+            width: 450px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: calc(100vh - 90px);
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .sandbox-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #2a1a1a;
+            border: 1px solid #ff4444;
+            border-radius: 4px;
+            color: #ff6666;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .message-bubble.sandbox {
+            border-color: #4a2a2a;
+            border-left: 3px solid #ff4444;
+        }
+
+        .test-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .test-modal.active {
+            display: flex;
+        }
+
+        .test-modal-content {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 12px;
+            padding: 24px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .test-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .test-form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .test-form-group label {
+            color: #9a9a9a;
+            font-size: 0.875rem;
+        }
+
+        .test-form-group select,
+        .test-form-group input,
+        .test-form-group textarea {
+            background: #0f0f0f;
+            border: 1px solid #2a2a2a;
+            border-radius: 4px;
+            padding: 8px;
+            color: #e0e0e0;
+            font-size: 0.9rem;
+        }
+
+        .test-result {
+            background: #0f0f0f;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 16px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 0.8rem;
+            color: #9a9a9a;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .divider {
+            height: 1px;
+            background: #2a2a2a;
+            margin: 20px 0;
+        }
+
+        .messages-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .messages-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .messages-container::-webkit-scrollbar-thumb {
+            background: #2a2a2a;
+            border-radius: 3px;
+        }
+
+        .message-bubble {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 12px;
+            padding: 16px;
+            width: 100%;
+            animation: slideIn 0.3s ease;
+        }
+
+        .message-bubble.completed {
+            opacity: 0.5;
+            border-color: #1a1a1a;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .waiting-text {
+            font-size: 0.8rem;
+            color: #6a6a6a;
+            margin-bottom: 8px;
+            font-style: italic;
+        }
+
+        .completed-text {
+            font-size: 0.8rem;
+            color: #4a4a4a;
+            margin-bottom: 8px;
+            font-style: italic;
+        }
+
+        .dots {
+            display: inline-block;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+
+        .dots::after {
+            content: '...';
+            animation: dots 1.5s infinite;
+        }
+
+        .message-title {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #e0e0e0;
+            margin-bottom: 8px;
+        }
+
+        .message-content {
+            margin-bottom: 16px;
+            color: #d0d0d0;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .form-fields {
+            margin-bottom: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .form-field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .form-field label {
+            font-size: 0.85rem;
+            color: #9a9a9a;
+        }
+
+        .form-field input,
+        .form-field select,
+        .form-field textarea {
+            background: #0f0f0f;
+            border: 1px solid #2a2a2a;
+            border-radius: 4px;
+            padding: 8px;
+            color: #e0e0e0;
+            font-size: 0.9rem;
+        }
+
+        .form-field input:focus,
+        .form-field select:focus,
+        .form-field textarea:focus {
+            outline: none;
+            border-color: #3a3a3a;
+        }
+
+        button {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #2a2a2a;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: #1f1f1f;
+            color: #b0b0b0;
+        }
+
+        .approve-btn {
+            background: #1a1f1a;
+            border-color: #2a3a2a;
+            color: #a0c0a0;
+        }
+
+        .approve-btn:hover {
+            background: #1f2a1f;
+            border-color: #3a4a3a;
+            color: #b0d0b0;
+        }
+
+        .reject-btn {
+            background: #1f1a1a;
+            border-color: #3a2a2a;
+            color: #c0a0a0;
+        }
+
+        .reject-btn:hover {
+            background: #2a1f1f;
+            border-color: #4a3a3a;
+            color: #d0b0b0;
+        }
+
+        .custom-btn {
+            background: #1a1a1f;
+            border-color: #2a2a3a;
+            color: #a0a0c0;
+        }
+
+        .custom-btn:hover {
+            background: #1f1f2a;
+            border-color: #3a3a4a;
+            color: #b0b0d0;
+        }
+
+        .submit-btn {
+            background: #1a1f1f;
+            border-color: #2a3a3a;
+            color: #a0c0c0;
+        }
+
+        .submit-btn:hover {
+            background: #1f2a2a;
+            border-color: #3a4a4a;
+            color: #b0d0d0;
+        }
+
+        .empty-state {
+            position: fixed;
+            top: 50%;
+            left: 225px;
+            transform: translateY(-50%);
+            text-align: center;
+            color: #3a3a3a;
+        }
+
+        .empty-state h2 {
+            font-size: 1rem;
+            font-weight: 400;
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            font-size: 0.875rem;
+            color: #2a2a2a;
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            padding: 10px 16px;
+            border-radius: 6px;
+            transform: translateY(100px);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            font-size: 0.8rem;
+            color: #8a8a8a;
+        }
+
+        .notification.show {
+            transform: translateY(0);
+        }
+
+        .notification.success {
+            border-left: 2px solid #3a4a3a;
+        }
+
+        .notification.error {
+            border-left: 2px solid #4a3a3a;
+        }
+
+        .docs-container {
+            display: none;
+            width: 100%;
+            max-width: 1200px;
+            padding: 20px;
+        }
+
+        .docs-container.active {
+            display: block;
+        }
+
+        .doc-section {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .doc-title {
+            font-size: 1.5rem;
+            color: #e0e0e0;
+            margin-bottom: 20px;
+        }
+
+        .doc-subtitle {
+            font-size: 1.2rem;
+            color: #d0d0d0;
+            margin: 20px 0 10px 0;
+        }
+
+        .code-block {
+            background: #0f0f0f;
+            border: 1px solid #2a2a2a;
+            border-radius: 4px;
+            padding: 12px;
+            margin: 10px 0;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            color: #9a9a9a;
+        }
+
+        .doc-text {
+            color: #b0b0b0;
+            line-height: 1.6;
+            margin: 10px 0;
+        }
+
+        @media (max-width: 768px) {
+            .messages-container {
+                width: calc(100% - 40px);
+            }
+
+            .empty-state {
+                left: 50%;
+                transform: translate(-50%, -50%);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="nav-bar">
+        <div class="nav-links">
+            <a href="#live" class="nav-link active" onclick="showSection('live')">Live</a>
+            <a href="/sandbox.html" class="nav-link">Sandbox Builder</a>
+            <a href="#docs" class="nav-link" onclick="showSection('docs')">Documentation</a>
+        </div>
+    </div>
+
+    <div class="content-area">
+        <div id="messages-container" class="messages-container">
+            <!-- Message bubbles will be dynamically inserted here -->
+        </div>
+
+        <div id="empty-state" class="empty-state" style="display: none;">
+            <h2>No pending approvals</h2>
+            <p>Waiting for requests...</p>
+        </div>
+
+        <div id="docs-container" class="docs-container">
+            <!-- Documentation will be inserted here -->
+        </div>
+    </div>
+
+    <div id="notification" class="notification"></div>
+
+    <script>
+        let approvals = [];
+        let currentApprovalIds = new Set();
+        let completedApprovals = new Set();
+
+        async function loadApprovals(silent = false) {
+            try {
+                const response = await fetch('/api/approvals');
+                const newApprovals = await response.json();
+
+                // Check if there are actual changes
+                const newIds = new Set(newApprovals.map(a => a.id));
+                const hasChanges = newApprovals.length !== approvals.length ||
+                                 ![...newIds].every(id => currentApprovalIds.has(id));
+
+                if (hasChanges || !silent) {
+                    approvals = newApprovals;
+                    currentApprovalIds = newIds;
+                    renderMessages();
+                }
+
+            } catch (error) {
+                if (!silent) {
+                    showNotification('Connection error', 'error');
+                }
+                console.error('Error loading approvals:', error);
+            }
+        }
+
+        function renderMessages() {
+            const container = document.getElementById('messages-container');
+            const emptyState = document.getElementById('empty-state');
+
+            if (approvals.length === 0 && completedApprovals.size === 0) {
+                container.innerHTML = '';
+                emptyState.style.display = 'block';
+            } else {
+                emptyState.style.display = 'none';
+
+                // Render active and completed approvals
+                const allMessages = [
+                    ...approvals.map(a => ({ ...a, isCompleted: false })),
+                    ...Array.from(completedApprovals).map(a => ({ ...a, isCompleted: true }))
+                ];
+
+                container.innerHTML = allMessages.map(approval => {
+                    if (approval.isCompleted) {
+                        return renderCompletedMessage(approval);
+                    }
+                    return renderActiveMessage(approval);
+                }).join('');
+            }
+        }
+
+        function renderActiveMessage(approval) {
+            const elements = approval.data?.elements || [];
+            let content = '';
+
+            // Process elements in order
+            elements.forEach(element => {
+                switch(element.type) {
+                    case 'title':
+                        content += `<div class="message-title">${escapeHtml(element.text)}</div>`;
+                        break;
+                    case 'message':
+                        content += `<div class="message-content">${escapeHtml(element.text)}</div>`;
+                        break;
+                    case 'boolean':
+                        // Default approve/reject buttons
+                        break;
+                    case 'buttons':
+                        // Custom buttons handled separately
+                        break;
+                    case 'form':
+                        // Form fields handled separately
+                        break;
+                }
+            });
+
+            // Get form fields if any
+            const formFields = elements.filter(e => e.type === 'form');
+            let formHtml = '';
+            if (formFields.length > 0) {
+                formHtml = '<div class="form-fields">';
+                formFields.forEach(field => {
+                    formHtml += renderFormField(field, approval.id);
+                });
+                formHtml += '</div>';
+            }
+
+            // Get action buttons
+            const buttonElements = elements.filter(e => e.type === 'buttons' || e.type === 'boolean');
+            let buttonsHtml = '<div class="action-buttons">';
+
+            if (buttonElements.some(e => e.type === 'boolean')) {
+                // Default approve/reject
+                buttonsHtml += `
+                    <button class="approve-btn" onclick="processApproval('${approval.id}', true)">
+                        Approve
+                    </button>
+                    <button class="reject-btn" onclick="processApproval('${approval.id}', false)">
+                        Reject
+                    </button>
+                `;
+            } else if (buttonElements.some(e => e.type === 'buttons')) {
+                // Custom buttons
+                buttonElements.forEach(element => {
+                    if (element.options) {
+                        element.options.forEach(option => {
+                            buttonsHtml += `
+                                <button class="custom-btn" onclick="processCustomResponse('${approval.id}', '${option}')">
+                                    ${escapeHtml(option)}
+                                </button>
+                            `;
+                        });
+                    }
+                });
+            } else if (formFields.length > 0) {
+                // Form submit button
+                buttonsHtml += `
+                    <button class="submit-btn" onclick="submitForm('${approval.id}')">
+                        Submit
+                    </button>
+                `;
+            }
+
+            buttonsHtml += '</div>';
+
+            // Fallback for old format (plain string data)
+            if (!elements.length && approval.data) {
+                if (typeof approval.data === 'string') {
+                    content = `<div class="message-content">${escapeHtml(approval.data)}</div>`;
+                } else if (typeof approval.data === 'object') {
+                    // Handle character array or plain object
+                    const keys = Object.keys(approval.data);
+                    const isCharArray = keys.every(k => !isNaN(parseInt(k)));
+
+                    if (isCharArray) {
+                        const message = keys
+                            .sort((a, b) => parseInt(a) - parseInt(b))
+                            .map(k => approval.data[k])
+                            .join('');
+                        content = `<div class="message-content">${escapeHtml(message.trim())}</div>`;
+                    } else {
+                        // Display as key-value pairs
+                        const message = Object.entries(approval.data)
+                            .map(([key, value]) => `${key}: ${value}`)
+                            .join('\n');
+                        content = `<div class="message-content">${escapeHtml(message)}</div>`;
+                    }
+                }
+
+                buttonsHtml = `
+                    <div class="action-buttons">
+                        <button class="approve-btn" onclick="processApproval('${approval.id}', true)">
+                            Approve
+                        </button>
+                        <button class="reject-btn" onclick="processApproval('${approval.id}', false)">
+                            Reject
+                        </button>
+                    </div>
+                `;
+            }
+
+            // Check if this is a sandbox test
+            const isSandbox = approval.id && approval.id.startsWith('test-');
+            const sandboxBadge = isSandbox ? '<div class="sandbox-badge">🧪 Sandbox Test</div>' : '';
+            const bubbleClass = isSandbox ? 'message-bubble sandbox' : 'message-bubble';
+
+            return `
+                <div class="${bubbleClass}" data-id="${approval.id}">
+                    ${sandboxBadge}
+                    <div class="waiting-text">Waiting for your response<span class="dots"></span></div>
+                    ${content}
+                    ${formHtml}
+                    ${buttonsHtml}
+                </div>
+            `;
+        }
+
+        function renderCompletedMessage(approval) {
+            let content = '';
+            const elements = approval.data?.elements || [];
+
+            elements.forEach(element => {
+                if (element.type === 'title') {
+                    content += `<div class="message-title">${escapeHtml(element.text)}</div>`;
+                } else if (element.type === 'message') {
+                    content += `<div class="message-content">${escapeHtml(element.text)}</div>`;
+                }
+            });
+
+            // Fallback for old format
+            if (!elements.length && approval.data) {
+                if (typeof approval.data === 'string') {
+                    content = `<div class="message-content">${escapeHtml(approval.data)}</div>`;
+                }
+            }
+
+            // Check if this is a sandbox test
+            const isSandbox = approval.id && approval.id.startsWith('test-');
+            const sandboxBadge = isSandbox ? '<div class="sandbox-badge">🧪 Sandbox Test</div>' : '';
+            const bubbleClass = isSandbox ? 'message-bubble completed sandbox' : 'message-bubble completed';
+
+            return `
+                <div class="${bubbleClass}" data-id="${approval.id}">
+                    ${sandboxBadge}
+                    <div class="completed-text">Response recorded</div>
+                    ${content}
+                </div>
+            `;
+        }
+
+        function renderFormField(field, approvalId) {
+            const fieldId = `field-${approvalId}-${field.name}`;
+            let html = `<div class="form-field">`;
+            html += `<label for="${fieldId}">${escapeHtml(field.label || field.name)}${field.required ? ' *' : ''}</label>`;
+
+            switch(field.fieldType) {
+                case 'text':
+                    html += `<input type="text" id="${fieldId}" name="${field.name}" ${field.required ? 'required' : ''}>`;
+                    break;
+                case 'number':
+                    html += `<input type="number" id="${fieldId}" name="${field.name}" ${field.required ? 'required' : ''}>`;
+                    break;
+                case 'select':
+                    html += `<select id="${fieldId}" name="${field.name}" ${field.required ? 'required' : ''}>`;
+                    html += `<option value="">Select...</option>`;
+                    if (field.options) {
+                        field.options.forEach(opt => {
+                            html += `<option value="${opt}">${escapeHtml(opt)}</option>`;
+                        });
+                    }
+                    html += `</select>`;
+                    break;
+                case 'multiselect':
+                    html += `<select id="${fieldId}" name="${field.name}" multiple size="4" ${field.required ? 'required' : ''}>`;
+                    if (field.options) {
+                        field.options.forEach(opt => {
+                            html += `<option value="${opt}">${escapeHtml(opt)}</option>`;
+                        });
+                    }
+                    html += `</select>`;
+                    html += `<small style="display: block; margin-top: 4px; color: #6a6a6a; font-size: 0.75rem;">Hold Ctrl/Cmd to select multiple</small>`;
+                    break;
+                default:
+                    html += `<input type="text" id="${fieldId}" name="${field.name}">`;
+            }
+
+            html += `</div>`;
+            return html;
+        }
+
+        async function processApproval(id, approved) {
+            await sendResponse(id, { approved });
+        }
+
+        async function processCustomResponse(id, response) {
+            await sendResponse(id, { response });
+        }
+
+        async function submitForm(id) {
+            const approval = approvals.find(a => a.id === id);
+            const formData = {};
+
+            // Collect form values
+            const bubble = document.querySelector(`[data-id="${id}"]`);
+            const inputs = bubble.querySelectorAll('input, select, textarea');
+            inputs.forEach(input => {
+                if (input.tagName === 'SELECT' && input.multiple) {
+                    // Handle multi-select
+                    const selected = Array.from(input.selectedOptions).map(opt => opt.value);
+                    formData[input.name] = selected;
+                } else {
+                    formData[input.name] = input.value;
+                }
+            });
+
+            await sendResponse(id, { formData });
+        }
+
+        async function sendResponse(id, responseData) {
+            try {
+                const response = await fetch(`/api/approve/${id}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(responseData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showNotification('Response sent', 'success');
+
+                    // Move to completed
+                    const approval = approvals.find(a => a.id === id);
+                    if (approval) {
+                        completedApprovals.add(approval);
+                        approvals = approvals.filter(a => a.id !== id);
+                        currentApprovalIds.delete(id);
+                        renderMessages();
+                    }
+
+                } else {
+                    showNotification('Failed', 'error');
+                }
+            } catch (error) {
+                showNotification('Error', 'error');
+                console.error('Error processing response:', error);
+            }
+        }
+
+        function showNotification(message, type) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type} show`;
+
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 2000);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showSection(section) {
+            const messagesContainer = document.getElementById('messages-container');
+            const docsContainer = document.getElementById('docs-container');
+            const emptyState = document.getElementById('empty-state');
+            const navLinks = document.querySelectorAll('.nav-link');
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === `#${section}`) {
+                    link.classList.add('active');
+                }
+            });
+
+            if (section === 'docs') {
+                messagesContainer.style.display = 'none';
+                emptyState.style.display = 'none';
+                docsContainer.classList.add('active');
+                loadDocs();
+            } else if (section === 'live' || section === 'messages') { // Support both for backwards compatibility
+                messagesContainer.style.display = 'flex';
+                docsContainer.classList.remove('active');
+                if (approvals.length === 0 && completedApprovals.size === 0) {
+                    emptyState.style.display = 'block';
+                }
+            }
+        }
+
+        function loadDocs() {
+            const docsContainer = document.getElementById('docs-container');
+            docsContainer.innerHTML = `
+                <div class="doc-section">
+                    <h1 class="doc-title">Webhook Approval System Documentation</h1>
+
+                    <h2 class="doc-subtitle">Quick Start</h2>
+                    <p class="doc-text">Send approval requests to your n8n workflows with custom forms, buttons, and messages.</p>
+
+                    <h2 class="doc-subtitle">Basic n8n Configuration</h2>
+                    <div class="code-block">{
+  "executionId": "{{ $execution.id }}",
+  "resumeUrl": "{{ $execution.resumeUrl }}",
+  "workflowName": "{{ $workflow.name }}",
+  "data": { /* Your content here */ }
+}</div>
+
+                    <h2 class="doc-subtitle">Response Types</h2>
+
+                    <h3 class="doc-subtitle">1. Simple Boolean (Approve/Reject)</h3>
+                    <p class="doc-text">Default approve/reject buttons</p>
+                    <div class="code-block">curl -X POST https://your-domain.ngrok.app/webhook/register \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -d '{
+    "executionId": "{{ $execution.id }}",
+    "resumeUrl": "{{ $execution.resumeUrl }}",
+    "workflowName": "{{ $workflow.name }}",
+    "data": {
+      "elements": [
+        {"type": "title", "text": "Budget Approval"},
+        {"type": "message", "text": "Please approve the budget request for $5000"},
+        {"type": "boolean"}
+      ]
+    }
+  }'</div>
+
+                    <h3 class="doc-subtitle">2. Custom Buttons</h3>
+                    <p class="doc-text">Create custom response options</p>
+                    <div class="code-block">curl -X POST https://your-domain.ngrok.app/webhook/register \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -d '{
+    "executionId": "{{ $execution.id }}",
+    "resumeUrl": "{{ $execution.resumeUrl }}",
+    "workflowName": "{{ $workflow.name }}",
+    "data": {
+      "elements": [
+        {"type": "title", "text": "Priority Selection"},
+        {"type": "message", "text": "Select the priority for this task"},
+        {"type": "buttons", "options": ["High", "Medium", "Low", "Skip"]}
+      ]
+    }
+  }'</div>
+
+                    <h3 class="doc-subtitle">3. Form Fields</h3>
+                    <p class="doc-text">Collect structured data with forms</p>
+                    <div class="code-block">curl -X POST https://your-domain.ngrok.app/webhook/register \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -d '{
+    "executionId": "{{ $execution.id }}",
+    "resumeUrl": "{{ $execution.resumeUrl }}",
+    "workflowName": "{{ $workflow.name }}",
+    "data": {
+      "elements": [
+        {"type": "title", "text": "Employee Information"},
+        {"type": "message", "text": "Please complete the following information"},
+        {"type": "form", "name": "name", "label": "Full Name", "fieldType": "text", "required": true},
+        {"type": "form", "name": "email", "label": "Email", "fieldType": "email", "required": true},
+        {"type": "form", "name": "department", "label": "Department", "fieldType": "select",
+         "options": ["Engineering", "Sales", "Marketing", "Support"], "required": true},
+        {"type": "form", "name": "notes", "label": "Additional Notes", "fieldType": "textarea"}
+      ]
+    }
+  }'</div>
+
+                    <h3 class="doc-subtitle">4. Multiple Messages and Titles</h3>
+                    <p class="doc-text">Add multiple text elements for complex approvals</p>
+                    <div class="code-block">curl -X POST https://your-domain.ngrok.app/webhook/register \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -d '{
+    "executionId": "{{ $execution.id }}",
+    "resumeUrl": "{{ $execution.resumeUrl }}",
+    "workflowName": "{{ $workflow.name }}",
+    "data": {
+      "elements": [
+        {"type": "title", "text": "System Maintenance"},
+        {"type": "message", "text": "Scheduled maintenance window requested"},
+        {"type": "title", "text": "Impact"},
+        {"type": "message", "text": "This will affect 500 users for approximately 2 hours"},
+        {"type": "message", "text": "Backup systems will remain operational"},
+        {"type": "boolean"}
+      ]
+    }
+  }'</div>
+
+                    <h3 class="doc-subtitle">5. Simple Text Message (Legacy)</h3>
+                    <p class="doc-text">For simple text approvals</p>
+                    <div class="code-block">curl -X POST https://your-domain.ngrok.app/webhook/register \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -d '{
+    "executionId": "{{ $execution.id }}",
+    "resumeUrl": "{{ $execution.resumeUrl }}",
+    "workflowName": "{{ $workflow.name }}",
+    "data": "Simple approval request message"
+  }'</div>
+
+                    <h2 class="doc-subtitle">Response Format</h2>
+                    <p class="doc-text">The system will send back responses in these formats:</p>
+
+                    <p class="doc-text"><strong>Boolean response:</strong></p>
+                    <div class="code-block">{ "approved": true/false }</div>
+
+                    <p class="doc-text"><strong>Button response:</strong></p>
+                    <div class="code-block">{ "response": "Selected Option" }</div>
+
+                    <p class="doc-text"><strong>Form response:</strong></p>
+                    <div class="code-block">{ "formData": { "field1": "value1", "field2": "value2" } }</div>
+
+                    <h2 class="doc-subtitle">Field Types for Forms</h2>
+                    <ul class="doc-text">
+                        <li><strong>text</strong> - Single line text input</li>
+                        <li><strong>number</strong> - Numeric input</li>
+                        <li><strong>select</strong> - Single selection dropdown (requires "options" array)</li>
+                        <li><strong>multiselect</strong> - Multiple selection list (requires "options" array)</li>
+                    </ul>
+
+                    <h2 class="doc-subtitle">n8n Variables</h2>
+                    <p class="doc-text">Always use these n8n variables in your HTTP Request node:</p>
+                    <ul class="doc-text">
+                        <li><strong>{{ $execution.id }}</strong> - Unique execution identifier</li>
+                        <li><strong>{{ $execution.resumeUrl }}</strong> - Webhook URL to resume workflow</li>
+                        <li><strong>{{ $workflow.name }}</strong> - Current workflow name</li>
+                    </ul>
+                </div>
+            `;
+        }
+
+        // Test modal functions
+        let currentTestMode = 'sandbox';
+
+        function openTestModal() {
+            const modal = document.createElement('div');
+            modal.className = 'test-modal active';
+            modal.innerHTML = `
+                <div class="test-modal-content">
+                    <h2 style="color: #e0e0e0; margin-bottom: 20px;">Generate Test Approval</h2>
+
+                    <!-- Mode Toggle -->
+                    <div style="display: flex; gap: 8px; margin-bottom: 20px; padding: 8px; background: #0f0f0f; border-radius: 8px;">
+                        <button id="mode-sandbox" class="test-button" style="flex: 1; background: #1a1a2a; border-color: #3a3a4a;" onclick="setTestMode('sandbox')">
+                            🧪 Sandbox Mode
+                        </button>
+                        <button id="mode-live" class="test-button" style="flex: 1;" onclick="setTestMode('live')">
+                            🔴 Live n8n Mode
+                        </button>
+                    </div>
+
+                    <div id="mode-description" style="padding: 10px; background: #0f0f0f; border-radius: 6px; margin-bottom: 16px; font-size: 0.85rem; color: #8a8a8a;">
+                        <strong>Sandbox Mode:</strong> Generates a test with auto-created resume URL for local testing
+                    </div>
+
+                    <div class="test-form">
+                        <!-- Live Mode Fields (hidden by default) -->
+                        <div id="live-mode-fields" style="display: none;">
+                            <div class="test-form-group">
+                                <label>Execution ID <span style="color: #c0a0a0;">*</span></label>
+                                <input type="text" id="test-execution-id" placeholder="e.g., 123456 or {{ $execution.id }}">
+                            </div>
+
+                            <div class="test-form-group">
+                                <label>Resume URL <span style="color: #c0a0a0;">*</span></label>
+                                <input type="text" id="test-resume-url" placeholder="https://your-n8n.com/webhook/... or {{ $execution.resumeUrl }}">
+                            </div>
+
+                            <div class="test-form-group">
+                                <label>Workflow Name</label>
+                                <input type="text" id="test-workflow-name" value="Test Workflow" placeholder="{{ $workflow.name }}">
+                            </div>
+
+                            <div style="height: 1px; background: #2a2a2a; margin: 16px 0;"></div>
+                        </div>
+
+                        <div class="test-form-group">
+                            <label>Response Type</label>
+                            <select id="test-type" onchange="updateTestForm()">
+                                <option value="boolean">Boolean (Approve/Reject)</option>
+                                <option value="buttons">Custom Buttons</option>
+                                <option value="form">Form Fields</option>
+                                <option value="mixed">Mixed Elements</option>
+                            </select>
+                        </div>
+
+                        <div class="test-form-group">
+                            <label>Title</label>
+                            <input type="text" id="test-title" value="Test Approval Request">
+                        </div>
+
+                        <div class="test-form-group">
+                            <label>Message</label>
+                            <textarea id="test-message" rows="3">This is a test approval request generated from the sandbox.</textarea>
+                        </div>
+
+                        <div id="test-type-options"></div>
+
+                        <div style="display: flex; gap: 8px; margin-top: 16px;">
+                            <button class="submit-btn" style="flex: 1" onclick="generateTest()">Generate Test</button>
+                            <button class="reject-btn" style="flex: 1" onclick="closeTestModal()">Cancel</button>
+                        </div>
+                    </div>
+
+                    <div id="test-result" style="display: none;"></div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            setTestMode('sandbox'); // Default to sandbox mode
+            updateTestForm();
+        }
+
+        function setTestMode(mode) {
+            currentTestMode = mode;
+            const sandboxBtn = document.getElementById('mode-sandbox');
+            const liveBtn = document.getElementById('mode-live');
+            const liveFields = document.getElementById('live-mode-fields');
+            const modeDesc = document.getElementById('mode-description');
+
+            if (mode === 'sandbox') {
+                sandboxBtn.style.background = '#1a1a2a';
+                sandboxBtn.style.borderColor = '#3a3a4a';
+                liveBtn.style.background = '';
+                liveBtn.style.borderColor = '';
+                liveFields.style.display = 'none';
+                modeDesc.innerHTML = '<strong>Sandbox Mode:</strong> Generates a test with auto-created resume URL for local testing';
+            } else {
+                liveBtn.style.background = '#2a1a1a';
+                liveBtn.style.borderColor = '#4a3a3a';
+                sandboxBtn.style.background = '';
+                sandboxBtn.style.borderColor = '';
+                liveFields.style.display = 'block';
+                modeDesc.innerHTML = '<strong>Live n8n Mode:</strong> Creates a real approval request using n8n execution variables';
+            }
+        }
+
+        function closeTestModal() {
+            const modal = document.querySelector('.test-modal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        function updateTestForm() {
+            const type = document.getElementById('test-type').value;
+            const optionsDiv = document.getElementById('test-type-options');
+
+            switch(type) {
+                case 'boolean':
+                    optionsDiv.innerHTML = '<p style="color: #6a6a6a; font-size: 0.875rem;">Will create standard Approve/Reject buttons</p>';
+                    break;
+
+                case 'buttons':
+                    optionsDiv.innerHTML = `
+                        <div class="test-form-group">
+                            <label>Button Options (comma separated)</label>
+                            <input type="text" id="test-buttons" value="High Priority, Medium Priority, Low Priority, Skip">
+                        </div>
+                    `;
+                    break;
+
+                case 'form':
+                    optionsDiv.innerHTML = `
+                        <div class="test-form-group">
+                            <label>Form Configuration</label>
+                            <select id="test-form-preset">
+                                <option value="simple">Simple (Name + Email)</option>
+                                <option value="employee">Employee Info</option>
+                                <option value="feedback">Feedback Form</option>
+                            </select>
+                        </div>
+                    `;
+                    break;
+
+                case 'mixed':
+                    optionsDiv.innerHTML = `
+                        <div class="test-form-group">
+                            <label>Additional Message</label>
+                            <input type="text" id="test-additional" value="Please review carefully before approving.">
+                        </div>
+                        <p style="color: #6a6a6a; font-size: 0.875rem;">Will create multiple titles, messages, and approve/reject buttons</p>
+                    `;
+                    break;
+            }
+        }
+
+        async function generateTest() {
+            const type = document.getElementById('test-type').value;
+            const title = document.getElementById('test-title').value;
+            const message = document.getElementById('test-message').value;
+
+            // Check if we're in live mode
+            if (currentTestMode === 'live') {
+                const executionId = document.getElementById('test-execution-id').value;
+                const resumeUrl = document.getElementById('test-resume-url').value;
+                const workflowName = document.getElementById('test-workflow-name').value || 'Test Workflow';
+
+                // Validate required fields for live mode
+                if (!executionId || !resumeUrl) {
+                    showNotification('Execution ID and Resume URL are required for live mode', 'error');
+                    return;
+                }
+
+                // Validate URL format if not using n8n variables
+                if (!resumeUrl.includes('{{') && !resumeUrl.startsWith('http')) {
+                    showNotification('Resume URL must be a valid URL or n8n variable', 'error');
+                    return;
+                }
+
+                await generateLiveTest(executionId, resumeUrl, workflowName, type, title, message);
+                return;
+            }
+
+            let elements = [
+                { type: 'title', text: title },
+                { type: 'message', text: message }
+            ];
+
+            switch(type) {
+                case 'boolean':
+                    elements.push({ type: 'boolean' });
+                    break;
+
+                case 'buttons':
+                    const buttons = document.getElementById('test-buttons').value.split(',').map(b => b.trim());
+                    elements.push({ type: 'buttons', options: buttons });
+                    break;
+
+                case 'form':
+                    const preset = document.getElementById('test-form-preset')?.value || 'simple';
+                    if (preset === 'simple') {
+                        elements.push(
+                            { type: 'form', name: 'name', label: 'Full Name', fieldType: 'text', required: true },
+                            { type: 'form', name: 'email', label: 'Email', fieldType: 'email', required: true }
+                        );
+                    } else if (preset === 'employee') {
+                        elements.push(
+                            { type: 'form', name: 'name', label: 'Full Name', fieldType: 'text', required: true },
+                            { type: 'form', name: 'email', label: 'Email', fieldType: 'email', required: true },
+                            { type: 'form', name: 'department', label: 'Department', fieldType: 'select',
+                              options: ['Engineering', 'Sales', 'Marketing', 'Support'], required: true },
+                            { type: 'form', name: 'notes', label: 'Notes', fieldType: 'textarea' }
+                        );
+                    } else {
+                        elements.push(
+                            { type: 'form', name: 'rating', label: 'Rating', fieldType: 'select',
+                              options: ['Excellent', 'Good', 'Average', 'Poor'], required: true },
+                            { type: 'form', name: 'feedback', label: 'Your Feedback', fieldType: 'textarea', required: true }
+                        );
+                    }
+                    break;
+
+                case 'mixed':
+                    const additional = document.getElementById('test-additional')?.value || '';
+                    if (additional) {
+                        elements.push(
+                            { type: 'title', text: 'Important Note' },
+                            { type: 'message', text: additional }
+                        );
+                    }
+                    elements.push({ type: 'boolean' });
+                    break;
+            }
+
+            try {
+                // Create test approval
+                const response = await fetch('/test/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ elements, workflowName: 'Sandbox Test' })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Show result
+                    const resultDiv = document.getElementById('test-result');
+                    resultDiv.style.display = 'block';
+                    resultDiv.innerHTML = `
+                        <h3 style="color: #a0c0a0; margin: 20px 0 10px 0;">✅ Sandbox Test Created Successfully</h3>
+                        <p style="color: #9a9a9a; margin-bottom: 10px;">Test ID: ${result.testId}</p>
+                        <p style="color: #9a9a9a; margin-bottom: 10px;">The test approval has been added to your dashboard.</p>
+                        <div class="test-result">
+                            <strong>cURL Command for testing:</strong>\n\n${result.curlCommand}\n\n<strong>Status Check URL:</strong>\n${result.statusUrl}\n\n<strong>Note:</strong> After approving/rejecting in the dashboard, check the status URL to see the webhook response.
+                        </div>
+                        <button class="approve-btn" style="width: 100%; margin-top: 16px;" onclick="closeTestModal(); loadApprovals();">Close & View Dashboard</button>
+                    `;
+
+                    // Copy curl to clipboard if possible
+                    if (navigator.clipboard) {
+                        navigator.clipboard.writeText(result.curlCommand);
+                        showNotification('cURL command copied to clipboard', 'success');
+                    }
+                }
+            } catch (error) {
+                showNotification('Failed to create test', 'error');
+                console.error('Test creation error:', error);
+            }
+        }
+
+        async function generateLiveTest(executionId, resumeUrl, workflowName, type, title, message) {
+            let elements = [
+                { type: 'title', text: title },
+                { type: 'message', text: message }
+            ];
+
+            // Add type-specific elements (same logic as sandbox)
+            switch(type) {
+                case 'boolean':
+                    elements.push({ type: 'boolean' });
+                    break;
+
+                case 'buttons':
+                    const buttons = document.getElementById('test-buttons')?.value?.split(',').map(b => b.trim()) || ['Option 1', 'Option 2'];
+                    elements.push({ type: 'buttons', options: buttons });
+                    break;
+
+                case 'form':
+                    const preset = document.getElementById('test-form-preset')?.value || 'simple';
+                    if (preset === 'simple') {
+                        elements.push(
+                            { type: 'form', name: 'name', label: 'Full Name', fieldType: 'text', required: true },
+                            { type: 'form', name: 'email', label: 'Email', fieldType: 'email', required: true }
+                        );
+                    } else if (preset === 'employee') {
+                        elements.push(
+                            { type: 'form', name: 'name', label: 'Full Name', fieldType: 'text', required: true },
+                            { type: 'form', name: 'email', label: 'Email', fieldType: 'email', required: true },
+                            { type: 'form', name: 'department', label: 'Department', fieldType: 'select',
+                              options: ['Engineering', 'Sales', 'Marketing', 'Support'], required: true },
+                            { type: 'form', name: 'notes', label: 'Notes', fieldType: 'textarea' }
+                        );
+                    } else {
+                        elements.push(
+                            { type: 'form', name: 'rating', label: 'Rating', fieldType: 'select',
+                              options: ['Excellent', 'Good', 'Average', 'Poor'], required: true },
+                            { type: 'form', name: 'feedback', label: 'Your Feedback', fieldType: 'textarea', required: true }
+                        );
+                    }
+                    break;
+
+                case 'mixed':
+                    const additional = document.getElementById('test-additional')?.value || '';
+                    if (additional) {
+                        elements.push(
+                            { type: 'title', text: 'Important Note' },
+                            { type: 'message', text: additional }
+                        );
+                    }
+                    elements.push({ type: 'boolean' });
+                    break;
+            }
+
+            // Generate the request body
+            const requestBody = {
+                executionId: executionId,
+                resumeUrl: resumeUrl,
+                workflowName: workflowName,
+                data: { elements: elements }
+            };
+
+            // Generate curl command
+            const curlCommand = `curl -X POST ${window.location.origin}/webhook/register \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -d '${JSON.stringify(requestBody, null, 2)}'`;
+
+            // Generate n8n HTTP Request node body
+            const n8nBody = JSON.stringify(requestBody, null, 2)
+                .replace(/"executionId":\s*"[^"]+"/, '"executionId": "{{ $execution.id }}"')
+                .replace(/"resumeUrl":\s*"[^"]+"/, '"resumeUrl": "{{ $execution.resumeUrl }}"')
+                .replace(/"workflowName":\s*"[^"]+"/, '"workflowName": "{{ $workflow.name }}"');
+
+            // Show result
+            const resultDiv = document.getElementById('test-result');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `
+                <h3 style="color: #a0c0a0; margin: 20px 0 10px 0;">✅ Live n8n Request Generated</h3>
+                <p style="color: #9a9a9a; margin-bottom: 10px;">Use the JSON below in your n8n HTTP Request node</p>
+
+                <div class="test-result">
+                    <strong>n8n HTTP Request Node - JSON Body:</strong>\n\n${n8nBody}\n\n<strong>cURL Command (for testing):</strong>\n\n${curlCommand}
+                </div>
+
+                <div style="display: flex; gap: 8px; margin-top: 16px;">
+                    <button class="approve-btn" style="flex: 1" onclick="copyToClipboard('${btoa(n8nBody)}', 'n8n')">Copy n8n JSON</button>
+                    <button class="custom-btn" style="flex: 1" onclick="copyToClipboard('${btoa(curlCommand)}', 'curl')">Copy cURL</button>
+                </div>
+
+                <button class="reject-btn" style="width: 100%; margin-top: 8px;" onclick="closeTestModal();">Close</button>
+            `;
+
+            // Try to directly register if valid URLs are provided
+            if (!executionId.includes('{{') && !resumeUrl.includes('{{') && resumeUrl.startsWith('http')) {
+                try {
+                    const response = await fetch('/webhook/register', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-API-Key': 'wh-approval-key-a7f8d9e2b4c6' // You might want to make this configurable
+                        },
+                        body: JSON.stringify(requestBody)
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        showNotification('Live approval registered successfully!', 'success');
+                        setTimeout(() => loadApprovals(), 500);
+                    }
+                } catch (error) {
+                    console.log('Could not auto-register:', error);
+                }
+            }
+        }
+
+        function copyToClipboard(encodedText, type) {
+            const text = atob(encodedText);
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showNotification(`${type === 'n8n' ? 'n8n JSON' : 'cURL command'} copied to clipboard`, 'success');
+                }).catch(err => {
+                    console.error('Failed to copy:', err);
+                });
+            }
+        }
+
+        // Add slide out animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideOut {
+                to {
+                    opacity: 0;
+                    transform: translateX(-20px);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Load approvals on page load
+        loadApprovals(false);
+
+        // Silent auto-refresh every 3 seconds
+        setInterval(() => loadApprovals(true), 3000);
+    </script>
+</body>
+</html>

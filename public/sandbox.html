@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sandbox Form Builder - Approval System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
+            background: #0a0a0a;
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+
+        .nav-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50px;
+            background: #1a1a1a;
+            border-bottom: 1px solid #2a2a2a;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            z-index: 1000;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-link {
+            color: #8a8a8a;
+            text-decoration: none;
+            font-size: 0.9rem;
+            padding: 5px 10px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .nav-link:hover {
+            color: #b0b0b0;
+            background: #2a2a2a;
+        }
+
+        .nav-link.active {
+            color: #e0e0e0;
+            background: #2a2a2a;
+        }
+
+        .container {
+            display: flex;
+            height: calc(100vh - 50px);
+            margin-top: 50px;
+        }
+
+        /* Left Panel - Form Builder */
+        .builder-panel {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            border-right: 1px solid #2a2a2a;
+        }
+
+        /* Middle Panel - Preview */
+        .preview-panel {
+            width: 450px;
+            padding: 20px;
+            overflow-y: auto;
+            border-right: 1px solid #2a2a2a;
+            background: #0f0f0f;
+        }
+
+        /* Right Panel - JSON Preview */
+        .json-panel {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .panel-title {
+            font-size: 1.1rem;
+            color: #e0e0e0;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        /* Element Cards */
+        .element-card {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            cursor: move;
+            transition: all 0.2s;
+        }
+
+        .element-card:hover {
+            border-color: #3a3a3a;
+        }
+
+        .element-card.dragging {
+            opacity: 0.5;
+        }
+
+        .element-card.drag-over {
+            border-color: #4a4a4a;
+            background: #1f1f1f;
+        }
+
+        .element-type {
+            font-size: 0.75rem;
+            color: #6a6a6a;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .element-content {
+            color: #d0d0d0;
+            margin-bottom: 8px;
+        }
+
+        .element-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .mini-btn {
+            padding: 4px 8px;
+            font-size: 0.75rem;
+            background: #0f0f0f;
+            border: 1px solid #2a2a2a;
+            border-radius: 4px;
+            color: #8a8a8a;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mini-btn:hover {
+            background: #1a1a1a;
+            border-color: #3a3a3a;
+            color: #b0b0b0;
+        }
+
+        .mini-btn.delete {
+            color: #c0a0a0;
+        }
+
+        .mini-btn.delete:hover {
+            background: #2a1f1f;
+            border-color: #4a3a3a;
+        }
+
+        /* Add Element Buttons */
+        .add-element-section {
+            margin-bottom: 24px;
+        }
+
+        .add-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .add-btn {
+            padding: 10px;
+            background: #1a1a1f;
+            border: 1px solid #2a2a3a;
+            border-radius: 6px;
+            color: #a0a0c0;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+        }
+
+        .add-btn:hover {
+            background: #1f1f2a;
+            border-color: #3a3a4a;
+            color: #b0b0d0;
+        }
+
+        /* Form Inputs */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            color: #9a9a9a;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="number"],
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 8px;
+            background: #0f0f0f;
+            border: 1px solid #2a2a2a;
+            border-radius: 4px;
+            color: #e0e0e0;
+            font-size: 0.9rem;
+        }
+
+        .form-group input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+
+        /* Preview */
+        .preview-card {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .preview-title {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #e0e0e0;
+            margin-bottom: 8px;
+        }
+
+        .preview-message {
+            margin-bottom: 16px;
+            color: #d0d0d0;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .preview-form-field {
+            margin-bottom: 12px;
+        }
+
+        .preview-form-field label {
+            display: block;
+            font-size: 0.85rem;
+            color: #9a9a9a;
+            margin-bottom: 4px;
+        }
+
+        .preview-form-field input,
+        .preview-form-field textarea,
+        .preview-form-field select {
+            width: 100%;
+            padding: 8px;
+            background: #0f0f0f;
+            border: 1px solid #2a2a2a;
+            border-radius: 4px;
+            color: #e0e0e0;
+            font-size: 0.9rem;
+        }
+
+        .preview-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .preview-button {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #2a2a2a;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: #1f1f1f;
+            color: #b0b0b0;
+        }
+
+        /* JSON Preview */
+        .json-preview {
+            background: #0f0f0f;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 0.85rem;
+            color: #9a9a9a;
+            white-space: pre;
+            overflow-x: auto;
+        }
+
+        .copy-json-btn {
+            width: 100%;
+            padding: 10px;
+            background: #1a1f1a;
+            border: 1px solid #2a3a2a;
+            border-radius: 6px;
+            color: #a0c0a0;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 12px;
+        }
+
+        .copy-json-btn:hover {
+            background: #1f2a1f;
+            border-color: #3a4a3a;
+            color: #b0d0b0;
+        }
+
+        /* Modal for element editing */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 12px;
+            padding: 24px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-title {
+            font-size: 1.2rem;
+            color: #e0e0e0;
+            margin-bottom: 20px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 20px;
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            padding: 10px 16px;
+            border-radius: 6px;
+            transform: translateY(100px);
+            transition: transform 0.3s ease;
+            z-index: 3000;
+            font-size: 0.8rem;
+            color: #8a8a8a;
+        }
+
+        .notification.show {
+            transform: translateY(0);
+        }
+
+        .notification.success {
+            border-left: 2px solid #3a4a3a;
+        }
+
+        /* Test Actions */
+        .test-actions {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #2a2a2a;
+        }
+
+        .test-btn {
+            width: 100%;
+            padding: 10px;
+            background: #1a1a2a;
+            border: 1px solid #2a2a3a;
+            border-radius: 6px;
+            color: #b0b0d0;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 8px;
+        }
+
+        .test-btn:hover {
+            background: #1f1f3a;
+            border-color: #3a3a4a;
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #2a2a2a;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3a3a3a;
+        }
+    </style>
+</head>
+<body>
+    <div class="nav-bar">
+        <div class="nav-links">
+            <a href="/" class="nav-link">Live</a>
+            <a href="/sandbox.html" class="nav-link active">Sandbox Builder</a>
+            <a href="/#docs" class="nav-link">Documentation</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Left Panel: Form Builder -->
+        <div class="builder-panel">
+            <h2 class="panel-title">🔧 Form Builder</h2>
+
+            <!-- Action Type Selector -->
+            <div style="background: #0f0f0f; border: 1px solid #2a2a2a; border-radius: 8px; padding: 12px; margin-bottom: 20px;">
+                <label style="display: block; font-size: 0.85rem; color: #9a9a9a; margin-bottom: 8px;">Action Type</label>
+                <select id="action-type-selector" style="width: 100%; padding: 8px; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 4px; color: #e0e0e0; font-size: 0.9rem;" onchange="setActionType(this.value)">
+                    <option value="">Select action type...</option>
+                    <option value="boolean">Boolean (Approve/Reject)</option>
+                    <option value="buttons">Custom Buttons</option>
+                    <option value="form">Form Fields</option>
+                </select>
+                <div id="action-type-info" style="margin-top: 8px; font-size: 0.8rem; color: #6a6a6a;"></div>
+            </div>
+
+            <div class="add-element-section">
+                <div class="add-buttons">
+                    <button class="add-btn" onclick="addElement('title')">+ Title</button>
+                    <button class="add-btn" onclick="addElement('message')">+ Message</button>
+                    <button id="action-btn" class="add-btn" onclick="addActionElement()" disabled style="opacity: 0.5;">+ Add Action</button>
+                </div>
+            </div>
+
+            <div id="elements-list"></div>
+
+            <div class="test-actions">
+                <button class="test-btn" onclick="createSandboxTest()">🚀 Create Sandbox Test</button>
+                <button class="test-btn" onclick="copyFullRequest()">📋 Copy Full HTTP Request</button>
+                <button class="test-btn" onclick="clearAll()">🗑️ Clear All</button>
+            </div>
+        </div>
+
+        <!-- Middle Panel: Preview -->
+        <div class="preview-panel">
+            <h2 class="panel-title">👁️ Live Preview</h2>
+            <div id="preview-container"></div>
+        </div>
+
+        <!-- Right Panel: JSON -->
+        <div class="json-panel">
+            <h2 class="panel-title">📄 JSON Output</h2>
+            <button class="copy-json-btn" onclick="copyJSON()">📋 Copy JSON</button>
+            <div class="json-preview" id="json-preview">{
+  "elements": []
+}</div>
+        </div>
+    </div>
+
+    <div id="notification" class="notification"></div>
+
+    <script>
+        let elements = [];
+        let draggedElement = null;
+        let draggedIndex = null;
+        let actionType = null; // Track the action type (boolean, buttons, or form)
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFromStorage();
+            updateUI();
+        });
+
+        // Action Type Management
+        function setActionType(type) {
+            actionType = type;
+            const actionBtn = document.getElementById('action-btn');
+            const infoDiv = document.getElementById('action-type-info');
+
+            // Remove any existing action elements when changing type
+            const hasExistingAction = elements.some(el =>
+                el.type === 'boolean' || el.type === 'buttons' || el.type === 'form'
+            );
+
+            if (hasExistingAction && type) {
+                if (!confirm('Changing action type will remove existing action elements. Continue?')) {
+                    document.getElementById('action-type-selector').value = getCurrentActionType();
+                    return;
+                }
+                // Remove existing action elements
+                elements = elements.filter(el =>
+                    el.type !== 'boolean' && el.type !== 'buttons' && el.type !== 'form'
+                );
+            }
+
+            if (type) {
+                actionBtn.disabled = false;
+                actionBtn.style.opacity = '1';
+
+                switch(type) {
+                    case 'boolean':
+                        actionBtn.textContent = '+ Add Boolean';
+                        infoDiv.textContent = 'Adds Approve/Reject buttons';
+                        break;
+                    case 'buttons':
+                        actionBtn.textContent = '+ Add Buttons';
+                        infoDiv.textContent = 'Add custom button options';
+                        break;
+                    case 'form':
+                        actionBtn.textContent = '+ Add Form Field';
+                        infoDiv.textContent = 'Add form input fields';
+                        break;
+                }
+            } else {
+                actionBtn.disabled = true;
+                actionBtn.style.opacity = '0.5';
+                actionBtn.textContent = '+ Add Action';
+                infoDiv.textContent = '';
+            }
+
+            updateUI();
+            saveToStorage();
+        }
+
+        function getCurrentActionType() {
+            const hasBoolean = elements.some(el => el.type === 'boolean');
+            const hasButtons = elements.some(el => el.type === 'buttons');
+            const hasForm = elements.some(el => el.type === 'form');
+
+            if (hasBoolean) return 'boolean';
+            if (hasButtons) return 'buttons';
+            if (hasForm) return 'form';
+            return '';
+        }
+
+        // Element Management
+        function addElement(type) {
+            let element = { type, id: Date.now() + Math.random() };
+
+            switch(type) {
+                case 'title':
+                    element.text = 'New Title';
+                    break;
+                case 'message':
+                    element.text = 'New message text';
+                    break;
+            }
+
+            elements.push(element);
+            updateUI();
+            saveToStorage();
+        }
+
+        function addActionElement() {
+            if (!actionType) {
+                showNotification('Please select an action type first', 'error');
+                return;
+            }
+
+            let element = { type: actionType, id: Date.now() + Math.random() };
+
+            switch(actionType) {
+                case 'boolean':
+                    // Check if boolean already exists
+                    if (elements.some(el => el.type === 'boolean')) {
+                        showNotification('Boolean action already added', 'error');
+                        return;
+                    }
+                    break;
+
+                case 'buttons':
+                    // Check if buttons already exist
+                    if (elements.some(el => el.type === 'buttons')) {
+                        showNotification('Buttons already added. Edit the existing one.', 'error');
+                        return;
+                    }
+                    element.options = ['Option 1', 'Option 2', 'Option 3'];
+                    break;
+
+                case 'form':
+                    element.name = 'field_' + Date.now();
+                    element.label = 'New Field';
+                    element.fieldType = 'text';
+                    element.required = false;
+                    // Add default options for select fields
+                    element.options = ['Option 1', 'Option 2', 'Option 3'];
+                    break;
+            }
+
+            elements.push(element);
+            updateUI();
+            saveToStorage();
+        }
+
+        // Deprecated - now handled by addActionElement
+        function addFormField() {
+            if (actionType !== 'form') {
+                showNotification('Please select "Form Fields" as action type first', 'error');
+                return;
+            }
+            addActionElement();
+        }
+
+        function editElement(index) {
+            const element = elements[index];
+            const modal = document.createElement('div');
+            modal.className = 'modal active';
+
+            let formHtml = '';
+            if (element.type === 'title' || element.type === 'message') {
+                formHtml = `
+                    <div class="form-group">
+                        <label>Text</label>
+                        <textarea id="edit-text" rows="3">${element.text || ''}</textarea>
+                    </div>
+                `;
+            } else if (element.type === 'buttons') {
+                formHtml = `
+                    <div class="form-group">
+                        <label>Options (one per line)</label>
+                        <textarea id="edit-options" rows="4">${(element.options || []).join('\n')}</textarea>
+                    </div>
+                `;
+            } else if (element.type === 'form') {
+                formHtml = `
+                    <div class="form-group">
+                        <label>Field Name</label>
+                        <input type="text" id="edit-name" value="${element.name || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>Label</label>
+                        <input type="text" id="edit-label" value="${element.label || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>Field Type</label>
+                        <select id="edit-fieldType" onchange="updateFormFieldOptions()">
+                            <option value="text" ${element.fieldType === 'text' ? 'selected' : ''}>Text</option>
+                            <option value="number" ${element.fieldType === 'number' ? 'selected' : ''}>Number</option>
+                            <option value="select" ${element.fieldType === 'select' ? 'selected' : ''}>Select (Single)</option>
+                            <option value="multiselect" ${element.fieldType === 'multiselect' ? 'selected' : ''}>Multi-Select</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="options-group" style="${(element.fieldType === 'select' || element.fieldType === 'multiselect') ? '' : 'display: none;'}">
+                        <label>Options (one per line)</label>
+                        <textarea id="edit-form-options" rows="3">${(element.options || ['Option 1', 'Option 2', 'Option 3']).join('\n')}</textarea>
+                    </div>
+                    <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-top: 16px; padding: 12px; background: #0f0f0f; border-radius: 4px;">
+                        <input type="checkbox" id="edit-required" ${element.required ? 'checked' : ''} style="width: 16px; height: 16px; cursor: pointer;">
+                        <label for="edit-required" style="margin: 0; cursor: pointer; user-select: none; color: #b0b0b0;">
+                            Mark as Required Field
+                            <span style="display: block; font-size: 0.75rem; color: #6a6a6a; margin-top: 2px;">User must fill this field to submit</span>
+                        </label>
+                    </div>
+                `;
+            }
+
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h3 class="modal-title">Edit ${element.type.charAt(0).toUpperCase() + element.type.slice(1)}</h3>
+                    ${formHtml}
+                    <div class="modal-buttons">
+                        <button class="preview-button" style="background: #1a1f1a; border-color: #2a3a2a;" onclick="saveEdit(${index})">Save</button>
+                        <button class="preview-button" onclick="closeModal()">Cancel</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            // Add change listener for field type
+            const fieldTypeSelect = document.getElementById('edit-fieldType');
+            if (fieldTypeSelect) {
+                fieldTypeSelect.addEventListener('change', () => {
+                    editElement(index); // Refresh modal
+                });
+            }
+        }
+
+        function saveEdit(index) {
+            const element = elements[index];
+
+            if (element.type === 'title' || element.type === 'message') {
+                element.text = document.getElementById('edit-text').value;
+            } else if (element.type === 'buttons') {
+                element.options = document.getElementById('edit-options').value.split('\n').filter(o => o.trim());
+            } else if (element.type === 'form') {
+                element.name = document.getElementById('edit-name').value;
+                element.label = document.getElementById('edit-label').value;
+                element.fieldType = document.getElementById('edit-fieldType').value;
+                element.required = document.getElementById('edit-required').checked;
+
+                const optionsField = document.getElementById('edit-form-options');
+                if (element.fieldType === 'select' || element.fieldType === 'multiselect') {
+                    // Always ensure options exist for select fields
+                    if (optionsField && optionsField.value.trim()) {
+                        element.options = optionsField.value.split('\n').filter(o => o.trim());
+                    } else {
+                        element.options = ['Option 1', 'Option 2', 'Option 3'];
+                    }
+                } else {
+                    // For text and number fields, no options needed
+                    delete element.options;
+                }
+            }
+
+            updateUI();
+            saveToStorage();
+            closeModal();
+        }
+
+        function deleteElement(index) {
+            const element = elements[index];
+            elements.splice(index, 1);
+
+            // Update action type if we deleted the last action element
+            if (!elements.some(el => el.type === 'boolean' || el.type === 'buttons' || el.type === 'form')) {
+                actionType = null;
+                document.getElementById('action-type-selector').value = '';
+                setActionType('');
+            }
+
+            updateUI();
+            saveToStorage();
+        }
+
+        function closeModal() {
+            const modal = document.querySelector('.modal');
+            if (modal) modal.remove();
+        }
+
+        function updateFormFieldOptions() {
+            const fieldType = document.getElementById('edit-fieldType')?.value;
+            const optionsGroup = document.getElementById('options-group');
+
+            if (optionsGroup) {
+                if (fieldType === 'select' || fieldType === 'multiselect') {
+                    optionsGroup.style.display = 'block';
+                    // Set default options if empty
+                    const optionsField = document.getElementById('edit-form-options');
+                    if (optionsField && !optionsField.value.trim()) {
+                        optionsField.value = 'Option 1\nOption 2\nOption 3';
+                    }
+                } else {
+                    optionsGroup.style.display = 'none';
+                }
+            }
+        }
+
+        // Drag and Drop
+        function handleDragStart(e, index) {
+            draggedElement = elements[index];
+            draggedIndex = index;
+            e.target.classList.add('dragging');
+        }
+
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+        }
+
+        function handleDragEnter(e) {
+            if (e.target.classList.contains('element-card')) {
+                e.target.classList.add('drag-over');
+            }
+        }
+
+        function handleDragLeave(e) {
+            if (e.target.classList.contains('element-card')) {
+                e.target.classList.remove('drag-over');
+            }
+        }
+
+        function handleDrop(e, dropIndex) {
+            e.preventDefault();
+            const cards = document.querySelectorAll('.element-card');
+            cards.forEach(card => card.classList.remove('drag-over'));
+
+            if (draggedIndex !== dropIndex) {
+                // Remove dragged element
+                elements.splice(draggedIndex, 1);
+
+                // Adjust drop index if needed
+                if (draggedIndex < dropIndex) {
+                    dropIndex--;
+                }
+
+                // Insert at new position
+                elements.splice(dropIndex, 0, draggedElement);
+
+                updateUI();
+                saveToStorage();
+            }
+        }
+
+        // UI Updates
+        function updateUI() {
+            updateElementsList();
+            updatePreview();
+            updateJSON();
+        }
+
+        function updateElementsList() {
+            const container = document.getElementById('elements-list');
+
+            if (elements.length === 0) {
+                container.innerHTML = '<p style="color: #6a6a6a; text-align: center; padding: 20px;">No elements yet. Add some above!</p>';
+                return;
+            }
+
+            container.innerHTML = elements.map((element, index) => {
+                let content = '';
+                let typeLabel = element.type;
+
+                if (element.type === 'title' || element.type === 'message') {
+                    content = element.text || 'Empty text';
+                } else if (element.type === 'buttons') {
+                    content = `Buttons: ${(element.options || []).join(', ')}`;
+                    typeLabel = 'ACTION: BUTTONS';
+                } else if (element.type === 'form') {
+                    content = `${element.label || element.name} (${element.fieldType})${element.required ? ' *' : ''}`;
+                    typeLabel = 'FORM FIELD';
+                } else if (element.type === 'boolean') {
+                    content = 'Approve / Reject buttons';
+                    typeLabel = 'ACTION: BOOLEAN';
+                }
+
+                const isAction = element.type === 'boolean' || element.type === 'buttons' || element.type === 'form';
+                const cardStyle = isAction ? 'border-color: #3a3a4a; background: #181820;' : '';
+
+                return `
+                    <div class="element-card" style="${cardStyle}"
+                         draggable="true"
+                         ondragstart="handleDragStart(event, ${index})"
+                         ondragend="handleDragEnd(event)"
+                         ondragover="handleDragOver(event)"
+                         ondragenter="handleDragEnter(event)"
+                         ondragleave="handleDragLeave(event)"
+                         ondrop="handleDrop(event, ${index})">
+                        <div class="element-type">${typeLabel}</div>
+                        <div class="element-content">${content}</div>
+                        <div class="element-actions">
+                            ${element.type !== 'boolean' ? `<button class="mini-btn" onclick="editElement(${index})">Edit</button>` : ''}
+                            <button class="mini-btn delete" onclick="deleteElement(${index})">Delete</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updatePreview() {
+            const container = document.getElementById('preview-container');
+
+            if (elements.length === 0) {
+                container.innerHTML = '<p style="color: #6a6a6a; text-align: center;">Preview will appear here</p>';
+                return;
+            }
+
+            const card = document.createElement('div');
+            card.className = 'preview-card';
+
+            let html = '';
+            let hasForm = false;
+            let hasBoolean = false;
+            let hasButtons = false;
+
+            elements.forEach(element => {
+                switch(element.type) {
+                    case 'title':
+                        html += `<div class="preview-title">${element.text || 'Title'}</div>`;
+                        break;
+                    case 'message':
+                        html += `<div class="preview-message">${element.text || 'Message'}</div>`;
+                        break;
+                    case 'form':
+                        hasForm = true;
+                        html += `<div class="preview-form-field">`;
+                        html += `<label>${element.label || element.name}${element.required ? ' *' : ''}</label>`;
+
+                        if (element.fieldType === 'select') {
+                            html += `<select>`;
+                            (element.options || []).forEach(opt => {
+                                html += `<option>${opt}</option>`;
+                            });
+                            html += `</select>`;
+                        } else if (element.fieldType === 'multiselect') {
+                            html += `<select multiple size="3">`;
+                            (element.options || []).forEach(opt => {
+                                html += `<option>${opt}</option>`;
+                            });
+                            html += `</select>`;
+                        } else {
+                            html += `<input type="${element.fieldType === 'number' ? 'number' : 'text'}" placeholder="${element.label || ''}">`;
+                        }
+                        html += `</div>`;
+                        break;
+                    case 'boolean':
+                        hasBoolean = true;
+                        break;
+                    case 'buttons':
+                        hasButtons = element;
+                        break;
+                }
+            });
+
+            // Add action buttons
+            if (hasBoolean) {
+                html += `<div class="preview-buttons">
+                    <button class="preview-button" style="background: #1a1f1a; border-color: #2a3a2a;">Approve</button>
+                    <button class="preview-button" style="background: #1f1a1a; border-color: #3a2a2a;">Reject</button>
+                </div>`;
+            } else if (hasButtons) {
+                html += `<div class="preview-buttons">`;
+                hasButtons.options.forEach(opt => {
+                    html += `<button class="preview-button">${opt}</button>`;
+                });
+                html += `</div>`;
+            } else if (hasForm) {
+                html += `<div class="preview-buttons">
+                    <button class="preview-button" style="background: #1a1f1f; border-color: #2a3a3a;">Submit</button>
+                </div>`;
+            }
+
+            card.innerHTML = html;
+            container.innerHTML = '';
+            container.appendChild(card);
+        }
+
+        function updateJSON() {
+            const jsonData = {
+                elements: elements.map(el => {
+                    const cleaned = { ...el };
+                    delete cleaned.id; // Remove internal ID
+                    return cleaned;
+                })
+            };
+
+            document.getElementById('json-preview').textContent = JSON.stringify(jsonData, null, 2);
+        }
+
+        // Storage
+        function saveToStorage() {
+            localStorage.setItem('sandbox-elements', JSON.stringify(elements));
+            localStorage.setItem('sandbox-action-type', actionType || '');
+        }
+
+        function loadFromStorage() {
+            const saved = localStorage.getItem('sandbox-elements');
+            if (saved) {
+                try {
+                    elements = JSON.parse(saved);
+
+                    // Restore action type based on elements
+                    actionType = getCurrentActionType();
+                    if (actionType) {
+                        document.getElementById('action-type-selector').value = actionType;
+                        setActionType(actionType);
+                    }
+                } catch (e) {
+                    console.error('Failed to load saved elements');
+                }
+            }
+        }
+
+        // Actions
+        function copyJSON() {
+            const jsonData = {
+                elements: elements.map(el => {
+                    const cleaned = { ...el };
+                    delete cleaned.id;
+                    return cleaned;
+                })
+            };
+
+            const jsonText = JSON.stringify(jsonData, null, 2);
+            navigator.clipboard.writeText(jsonText).then(() => {
+                showNotification('JSON copied to clipboard', 'success');
+            });
+        }
+
+        function copyFullRequest() {
+            const jsonData = {
+                executionId: "{{ $execution.id }}",
+                resumeUrl: "{{ $execution.resumeUrl }}",
+                workflowName: "{{ $workflow.name }}",
+                data: {
+                    elements: elements.map(el => {
+                        const cleaned = { ...el };
+                        delete cleaned.id;
+                        return cleaned;
+                    })
+                }
+            };
+
+            const jsonText = JSON.stringify(jsonData, null, 2);
+            navigator.clipboard.writeText(jsonText).then(() => {
+                showNotification('Full HTTP request copied to clipboard', 'success');
+            });
+        }
+
+        async function createSandboxTest() {
+            if (elements.length === 0) {
+                showNotification('Add some elements first', 'error');
+                return;
+            }
+
+            const cleanedElements = elements.map(el => {
+                const cleaned = { ...el };
+                delete cleaned.id;
+                return cleaned;
+            });
+
+            try {
+                const response = await fetch('/test/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        elements: cleanedElements,
+                        workflowName: 'Sandbox Test'
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    showNotification('Test created! Check the Live dashboard', 'success');
+                    // Optionally redirect to main dashboard
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 1500);
+                }
+            } catch (error) {
+                showNotification('Failed to create test', 'error');
+            }
+        }
+
+        function clearAll() {
+            if (confirm('Clear all elements?')) {
+                elements = [];
+                actionType = null;
+                document.getElementById('action-type-selector').value = '';
+                setActionType('');
+                updateUI();
+                saveToStorage();
+                showNotification('All elements cleared', 'success');
+            }
+        }
+
+        function showNotification(message, type) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type} show`;
+
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
